@@ -9,10 +9,10 @@ class Siswa extends Model
 {
     use HasFactory;
     protected $table = 'siswa';
-    protected $fillable = ['full_name', 'email', 'degree', 'hobi_id'];
+    protected $fillable = ['full_name', 'email', 'degree'];
 
     public function hobi()
     {
-        return $this->belongsTo(Hobi::class, 'hobi_id', 'id');
+        return $this->belongsToMany(Hobi::class, 'hobi_siswa', 'siswa_id', 'hobi_id');
     }
 }

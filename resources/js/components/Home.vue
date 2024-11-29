@@ -26,7 +26,7 @@
                 <th class="border-b p-2 text-left">Email</th>
                 <th class="border-b p-2 text-left">Degree</th>
                 <th class="border-b p-2 text-left">Hobi</th>
-                <th class="border-b p-2 text-left">Actions</th> 
+                <th class="border-b p-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -34,7 +34,11 @@
                 <td class="border-b p-2">{{ student.full_name }}</td>
                 <td class="border-b p-2">{{ student.email }}</td>
                 <td class="border-b p-2">{{ student.degree }}</td>
-                <td class="border-b p-2">{{ student.hobi ? student.hobi.name : 'No Hobi' }}</td>
+                <td class="border-b p-2">
+                  <ul>
+                    <li v-for="hobi in student.hobi" :key="hobi.id">{{ hobi.name }}</li>
+                  </ul>
+                </td>
                 <td class="border-b p-2">
                   <!-- Tombol Edit -->
                   <button
@@ -90,13 +94,18 @@
               </div>
               <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700">Hobi</label>
-                <select
-                  v-model="editForm.hobi_id"
-                  class="mt-1 block w-full p-2 border border-gray-300 rounded"
-                  required
-                >
-                  <option v-for="hobi in hobis" :key="hobi.id" :value="hobi.id">{{ hobi.name }}</option>
-                </select>
+                <div class="space-y-2">
+                  <div v-for="hobi in hobis" :key="hobi.id" class="flex items-center">
+                    <input
+                      type="checkbox"
+                      :id="'hobi-' + hobi.id"
+                      :value="hobi.id"
+                      v-model="editForm.hobi_id"
+                      class="mr-2"
+                    />
+                    <label :for="'hobi-' + hobi.id" class="text-sm text-gray-700">{{ hobi.name }}</label>
+                  </div>
+                </div>
               </div>
               <button
                 type="submit"
@@ -118,111 +127,113 @@
     </div>
   </template>
 
-  <script>
-  import Sidebar from "@/components/Sidebar.vue";
-  import axios from "axios";
-  import { ref, onMounted } from "vue";
 
-  export default {
-    components: {
-      Sidebar,
-    },
-    setup() {
-      const isSidebarOpen = ref(true);
-      const students = ref([]);
-      const hobis = ref([]);
-      const isEditing = ref(false);
-      const editForm = ref({
+
+<script>
+import Sidebar from "@/components/Sidebar.vue";
+import axios from "axios";
+import { ref, onMounted } from "vue";
+
+export default {
+  components: {
+    Sidebar,
+  },
+  setup() {
+    const isSidebarOpen = ref(true);
+    const students = ref([]);
+    const hobis = ref([]);
+    const isEditing = ref(false);
+    const editForm = ref({
+      id: null,
+      full_name: "",
+      email: "",
+      degree: "",
+      hobi_id: [],
+    });
+
+    const toggleSidebar = () => {
+      isSidebarOpen.value = !isSidebarOpen.value;
+    };
+
+    onMounted(() => {
+      axios
+        .get("http://127.0.0.1:8000/api/siswa")
+        .then((response) => {
+          students.value = response.data;
+        })
+        .catch((error) => {
+          console.error("Error fetching students:", error);
+        });
+
+      axios
+        .get("http://127.0.0.1:8000/api/hobi")
+        .then((response) => {
+          hobis.value = response.data;
+        })
+        .catch((error) => {
+          console.error("Error fetching hobbies:", error);
+        });
+    });
+
+    const deleteStudent = (id) => {
+      axios
+        .delete(`http://127.0.0.1:8000/api/siswa/${id}`)
+        .then((response) => {
+          students.value = students.value.filter((student) => student.id !== id);
+        })
+        .catch((error) => {
+          console.error("Error deleting student:", error);
+        });
+    };
+
+    const editStudent = (student) => {
+      editForm.value = { ...student };
+      editForm.value.hobi_id = student.hobi.map(h => h.id);
+      isEditing.value = true;
+    };
+
+    const cancelEdit = () => {
+      isEditing.value = false;
+      editForm.value = {
         id: null,
         full_name: "",
         email: "",
         degree: "",
-        hobi_id: null,
-      });
-
-      const toggleSidebar = () => {
-        isSidebarOpen.value = !isSidebarOpen.value;
+        hobi_id: [],
       };
+    };
 
-      onMounted(() => {
-        axios
-          .get("http://127.0.0.1:8000/api/siswa")
-          .then((response) => {
-            students.value = response.data;
-          })
-          .catch((error) => {
-            console.error("Error fetching students:", error);
-          });
+    const updateStudent = () => {
+  axios
+    .put(`http://127.0.0.1:8000/api/siswa/${editForm.value.id}`, editForm.value)
+    .then((response) => {
+      const index = students.value.findIndex(
+        (student) => student.id === editForm.value.id
+      );
+      students.value[index] = response.data;
+      isEditing.value = false;
+      alert("Data berhasil diupdate!");
 
-        axios
-          .get("http://127.0.0.1:8000/api/hobi")
-          .then((response) => {
-            hobis.value = response.data;
-          })
-          .catch((error) => {
-            console.error("Error fetching hobbies:", error);
-          });
-      });
+      window.location.reload();
+    })
+    .catch((error) => {
+      console.error("Error updating student:", error);
+      alert("Terjadi kesalahan saat memperbarui data!");
+    });
+};
 
-      const deleteStudent = (id) => {
-        axios
-          .delete(`http://127.0.0.1:8000/api/siswa/${id}`)
-          .then((response) => {
-            students.value = students.value.filter((student) => student.id !== id);
-          })
-          .catch((error) => {
-            console.error("Error deleting student:", error);
-          });
-      };
-
-      const editStudent = (student) => {
-        editForm.value = { ...student };
-        isEditing.value = true;
-      };
-      const cancelEdit = () => {
-        isEditing.value = false;
-        editForm.value = {
-          id: null,
-          full_name: "",
-          email: "",
-          degree: "",
-          hobi_id: null,
-        };
-      };
-
-      const updateStudent = () => {
-        axios
-          .put(`http://127.0.0.1:8000/api/siswa/${editForm.value.id}`, editForm.value)
-          .then((response) => {
-            const index = students.value.findIndex(
-              (student) => student.id === editForm.value.id
-            );
-            students.value[index] = response.data;
-            isEditing.value = false;
-            alert("Data berhasil diupdate!");
-          })
-          .catch((error) => {
-            console.error("Error updating student:", error);
-            alert("Terjadi kesalahan saat memperbarui data!");
-          });
-      };
-
-      return {
-        isSidebarOpen,
-        toggleSidebar,
-        students,
-        deleteStudent,
-        isEditing,
-        editForm,
-        hobis,
-        editStudent,
-        cancelEdit,
-        updateStudent,
-      };
-    },
-  };
-  </script>
-
-  <style scoped>
-
-  </style>
+    return {
+      isSidebarOpen,
+      toggleSidebar,
+      students,
+      deleteStudent,
+      isEditing,
+      editForm,
+      hobis,
+      editStudent,
+      cancelEdit,
+      updateStudent,
+    };
+  },
+};
+</script>

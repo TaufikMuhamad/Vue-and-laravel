@@ -13,7 +13,6 @@ class Hobi extends Model
 
     public function siswa()
     {
-        return $this->hasMany(Siswa::class, 'hobi_id', 'id');
+        return $this->belongsToMany(Siswa::class, 'hobi_siswa', 'hobi_id', 'siswa_id');
     }
-
 }

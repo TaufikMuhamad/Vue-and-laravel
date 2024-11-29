@@ -28,3 +28,4 @@ Route::delete('siswa/{id}', [SiswaController::class, 'destroy']);
 // Hobi
 Route::get('hobi', [HobiController::class, 'index']);
 Route::post('hobi', [HobiController::class, 'store']);
+
